@@ -22,10 +22,11 @@ A [Terraform module][module] to manage collections of managed and uploaded TLS c
 ```hcl
 module "certificates" {
   source = "terraform-hetzner-modules/certificate/hetzner"
+
   uploaded = {
     web = {
-      certificate = file("fullchain.pem")
-      private_key = file("privkey.pem")
+      certificate = file("${path.module}/fullchain.pem")
+      private_key = file("${path.module}/privkey.pem")
     }
   }
 }
