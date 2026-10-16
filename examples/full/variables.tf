@@ -17,5 +17,5 @@ variable "private_key" {
 variable "revision" {
   description = "Change with a forced or key-only replacement that retains the same certificate."
   type        = string
-  default     = ""
+  default     = "v1"
 }

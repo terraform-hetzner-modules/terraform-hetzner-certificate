@@ -2,10 +2,22 @@ module "certificates" {
   source = "../.."
   labels = { environment = "example", managed_by = "terraform" }
   managed = {
-    web = { domain_names = var.domain_names, labels = { purpose = "public" } }
+    web = {
+      name         = null # Use generated names so replacements can coexist.
+      domain_names = var.domain_names
+      labels       = { purpose = "public" }
+      revision     = var.revision
+    }
   }
   uploaded = {
-    internal = { certificate = var.certificate, private_key = var.private_key, revision = var.revision }
+    internal = {
+      # Change the exact name when replacing this certificate.
+      name        = "internal-${var.revision}"
+      certificate = var.certificate
+      private_key = var.private_key
+      labels      = { purpose = "internal" }
+      revision    = var.revision
+    }
   }
 }
 

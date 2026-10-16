@@ -1,23 +1,11 @@
-<p align="center">
-    <!-- terraform-hetzner-certificate -->
-<img src="https://cdn.simpleicons.org/terraform/844FBA" alt="Terraform Logo" align="center" width="128">
-<img src="https://avatars.githubusercontent.com/u/30047064?s=200&v=4" alt="Hetzner Logo" align="center" width="128">
-    <h1 align="center">Hetzner Cloud</h1>
-    <h2 align="center"><code>certificate</code></h2>
-</p>
+# Hetzner Certificate Terraform module
 
-[![License](https://img.shields.io/github/license/terraform-hetzner-modules/terraform-hetzner-certificate?label=License)](https://opensource.org/licenses/MIT)
-[![Terraform](https://img.shields.io/badge/Terraform-_>=_1.7-brightgreen?logo=terraform&logoColor=623CE4)][terraform]
-[![Opentofu](https://img.shields.io/badge/OpenTofu-_>=_1.8-brightgreen?logo=opentofu)][opentofu]
-[![CI Status](https://github.com/terraform-hetzner-modules/terraform-hetzner-certificate/actions/workflows/testing.yaml/badge.svg)](https://github.com/terraform-hetzner-modules/terraform-hetzner-certificate/blob/main/.github/workflows/testing.yaml)
-[![GitHub Release](https://img.shields.io/github/v/release/terraform-hetzner-modules/terraform-hetzner-certificate?label=Release)][github_releases]
-[![GitHub Activity](https://img.shields.io/github/commit-activity/m/terraform-hetzner-modules/terraform-hetzner-certificate?label=Commits)][github_commits]
-[![Renovate](https://img.shields.io/badge/Renovate-enabled-brightgreen?logo=renovate&logoColor=1A1F6C)][renovate]
-[![Pre-Commit](https://img.shields.io/badge/PreCommit-enabled-brightgreen?logo=precommit&logoColor=FAB040)][pre-commit]
+Manage multiple managed and uploaded TLS certificates with shared labels and replacement-aware naming.
 
-A [Terraform module][module] to manage collections of managed and uploaded TLS certificates in [Hetzner Cloud][hetzner].
+## Usage
 
-## ✨ TL;DR
+Copy this configuration into `main.tf` and add the
+[provider configuration](#provider-configuration) below in `versions.tf`.
 
 ```hcl
 module "certificates" {
@@ -31,6 +19,36 @@ module "certificates" {
   }
 }
 ```
+
+Place your certificate chain in `fullchain.pem` and its matching private key in `privkey.pem` beside
+`main.tf`. These files must exist before planning. Keep private keys out of version control.
+
+## Provider configuration
+
+Export your Hetzner API token as `HCLOUD_TOKEN`. Put the following in your calling root's `versions.tf`:
+
+```hcl
+terraform {
+  required_version = ">= 1.7"
+  required_providers {
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.70"
+    }
+  }
+}
+
+provider "hcloud" {}
+```
+
+With both files in place, run `terraform init`, `terraform plan`, and `terraform apply`.
+Credentials and provider configuration belong in the calling root.
+Terraform >= 1.7 and OpenTofu >= 1.8 are supported.
+
+## Examples
+
+- [Basic](examples/basic): an uploaded certificate.
+- [Full](examples/full): both certificate types, every input, and HTTPS service integration.
 
 ## Certificate collections
 
@@ -68,83 +86,56 @@ supply a new unique name yourself. Using the same name with `create_before_destr
 uniqueness constraint. Replacements of default-named certificates with unchanged material also need a new
 revision. Removal of a map entry deletes its certificate; remove it from consumers first.
 
-## Compatibility and examples
-
-Requires Terraform >= 1.7 (OpenTofu >= 1.8 tested) and hcloud ~> 1.70.
-See [basic](examples/basic) for uploads and [full](examples/full) for both kinds connected to an HTTPS service.
-Supply real PEM values through variables or your secret-management system; configure `HCLOUD_TOKEN` for live use.
-The generated [schema report](docs/SCHEMA.md) records provider fields and module mappings.
-See the [maintenance guide](docs/UPGRADING.md) for validation and coverage checks.
-Run `terraform init -backend=false`, `terraform validate`, and `terraform test` for credential-free tests.
-Tests use mock-only placeholder certificate material, never real private keys.
-
 <!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+| ---- | ------- |
+| terraform | >= 1.7 |
+| hcloud | ~> 1.70 |
+
 ## Providers
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_hcloud"></a> [hcloud](#provider\_hcloud) | ~> 1.70 |
+| hcloud | ~> 1.70 |
 
-## Modules
+## Resources
 
-No modules.
+| Name | Type |
+| ---- | ---- |
+| [hcloud_managed_certificate.current](https://registry.terraform.io/providers/hetznercloud/hcloud/latest/docs/resources/managed_certificate) | resource |
+| [hcloud_uploaded_certificate.current](https://registry.terraform.io/providers/hetznercloud/hcloud/latest/docs/resources/uploaded_certificate) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_labels"></a> [labels](#input\_labels) | Shared labels. Per-certificate labels take precedence. | `map(string)` | `{}` | no |
-| <a name="input_managed"></a> [managed](#input\_managed) | Managed certificates keyed by stable identifiers. Default names include a digest of the domain set and revision for replacement. Name overrides are exact and require caller-managed uniqueness during replacement. | ```map(object({ name = optional(string) domain_names = set(string) labels = optional(map(string), {}) revision = optional(string, "") }))``` | `{}` | no |
-| <a name="input_uploaded"></a> [uploaded](#input\_uploaded) | Uploaded certificates keyed by stable, non-secret identifiers. PEM values may be computed. Private keys are sensitive and stored in state. Default names hash the public certificate and revision; only map keys are declassified for resource addresses. | ```map(object({ name = optional(string) certificate = string private_key = string labels = optional(map(string), {}) revision = optional(string, "") }))``` | `{}` | no |
+| labels | Shared labels. Per-certificate labels take precedence. | `map(string)` | `{}` | no |
+| managed | Managed certificates keyed by stable identifiers. Default names include a digest of the domain set and revision for replacement. Name overrides are exact and require caller-managed uniqueness during replacement. | ```map(object({ name = optional(string) domain_names = set(string) labels = optional(map(string), {}) revision = optional(string, "") }))``` | `{}` | no |
+| uploaded | Uploaded certificates keyed by stable, non-secret identifiers. PEM values may be computed. Private keys are sensitive and stored in state. Default names hash the public certificate and revision; only map keys are declassified for resource addresses. | ```map(object({ name = optional(string) certificate = string private_key = string labels = optional(map(string), {}) revision = optional(string, "") }))``` | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_managed"></a> [managed](#output\_managed) | Complete managed certificate attributes indexed by caller keys. |
-| <a name="output_managed_ids"></a> [managed\_ids](#output\_managed\_ids) | Managed certificate IDs indexed by caller keys, suitable for load balancer services. |
-| <a name="output_uploaded"></a> [uploaded](#output\_uploaded) | Uploaded certificate metadata without private keys, indexed by caller keys. Sensitive because configuration values may be sensitive. |
-| <a name="output_uploaded_ids"></a> [uploaded\_ids](#output\_uploaded\_ids) | Uploaded certificate IDs indexed by caller keys, suitable for load balancer services. |
+| managed | Complete managed certificate attributes indexed by caller keys. |
+| managed\_ids | Managed certificate IDs indexed by caller keys, suitable for load balancer services. |
+| uploaded | Uploaded certificate metadata without private keys, indexed by caller keys. Sensitive because configuration values may be sensitive. |
+| uploaded\_ids | Uploaded certificate IDs indexed by caller keys, suitable for load balancer services. |
 <!-- END_TF_DOCS -->
 
-### 🔃 Contributing
+## Contributing
 
-Refer to our [documentation for contributors][contributing] for contributing guidelines, commit message
-formats and versioning tips.
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for local checks and contribution guidelines, and
+[UPGRADING.md](docs/UPGRADING.md) for compatibility and live acceptance checks. The generated
+[schema report](docs/SCHEMA.md) documents provider coverage and intentional omissions.
 
-### 📥 Maintainers
+## Authors
 
-This project is owned and maintained by [Terraform Hetzner Modules][org]. Refer to the [`AUTHORS`][authors] or [`CODEOWNERS`][owners]
-for more information. You may also use the linked contact details to reach out directly.
+Maintained by [Terraform Hetzner Modules](https://github.com/terraform-hetzner-modules).
+See [AUTHORS](.github/AUTHORS) and [CODEOWNERS](.github/CODEOWNERS).
 
-### ©️ Copyright
+## License
 
-- _Assets provided by:_ **[HashiCorp][hashicorp]**
-- _Sources provided by:_ **[Terraform Hetzner Modules][org]** under the **[MIT License][license]**
-
-<!-- INTERNAL REFERENCES -->
-
-<!-- Project references -->
-
-<!-- File references -->
-
-[license]: LICENSE
-[contributing]: docs/CONTRIBUTING.md
-[authors]: .github/AUTHORS
-[owners]: .github/CODEOWNERS
-
-<!-- General links -->
-
-[org]: https://github.com/terraform-hetzner-modules
-[terraform]: https://terraform.io
-[opentofu]: https://opentofu.org/
-[hashicorp]: https://www.hashicorp.com/
-[hetzner]: https://hetzner.com
-[github_releases]: https://github.com/terraform-hetzner-modules/terraform-hetzner-certificate/releases
-[github_commits]: https://github.com/terraform-hetzner-modules/terraform-hetzner-certificate/commits/main/
-
-<!-- Third-party -->
-
-[module]: https://registry.terraform.io/modules/terraform-hetzner-modules/certificate/hetzner/latest
-[renovate]: https://renovatebot.com/
-[pre-commit]: https://pre-commit.com/
+MIT. See [LICENSE](LICENSE).
